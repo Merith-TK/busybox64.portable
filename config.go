@@ -30,8 +30,8 @@ type config struct {
 }
 
 func setupConfig() error {
-	str, err := os.ReadFile(configfile)
-	if err != nil {
+	str, fileErr := os.ReadFile(configfile)
+	if fileErr != nil {
 		f, err := os.OpenFile(configfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			log.Println(err)
@@ -40,9 +40,8 @@ func setupConfig() error {
 		if _, err := f.WriteString(defaultConfig); err != nil {
 			log.Println(err)
 		}
-		str, _ = os.ReadFile(configfile)
-		err = nil
+		str, fileErr = os.ReadFile(configfile)
 	}
 	_ = toml.Unmarshal([]byte(str), &conf)
-	return err
+	return fileErr
 }
