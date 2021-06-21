@@ -7,14 +7,15 @@ import (
 )
 
 func envInit() {
+	envValueReplace := map[string]string{
+		"{data}": dataDir,
+	}
 	for k, v := range conf.Environment {
-
-		// dataDirectory
-		v = strings.ReplaceAll(v, "{data}", dataDir)
-
-		// Current PWD
-		pwd, _ := os.Getwd()
-		v = strings.ReplaceAll(v, "{pwd}", pwd)
+		for key, value := range envValueReplace {
+			if strings.Contains(v, key) {
+				v = strings.ReplaceAll(v, key, value)
+			}
+		}
 		os.Setenv(k, v)
 		fmt.Println("ENV:", k, "=", v)
 	}

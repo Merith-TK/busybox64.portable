@@ -1,7 +1,0 @@
-
-	launcher = "busybox64.exe"
-	launcherArgs = "bash"
-	[environment]
-	  APPDATA = "{data}/"
-	  HOME = "{data}/"
-	  PATH = "{data}/.busybox;{data}/bin"
