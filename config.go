@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -21,6 +22,10 @@ programArgs = ""
   HOME = "{data}/home"
   PATH = "{data}/bin;{data}/bin/busybox"
 `
+	// THis is here for future proofing api shit
+	configEnvReplace = map[string]string{
+		"{data}": dataDir,
+	}
 )
 
 type config struct {
@@ -30,6 +35,7 @@ type config struct {
 }
 
 func setupConfig() error {
+	// Check if file is readable, if not, make the file
 	str, fileErr := os.ReadFile(configfile)
 	if fileErr != nil {
 		f, err := os.OpenFile(configfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -44,4 +50,17 @@ func setupConfig() error {
 	}
 	_ = toml.Unmarshal([]byte(str), &conf)
 	return fileErr
+}
+
+// Setup the Environment part of the config,
+func envInit() {
+	for k, v := range conf.Environment {
+		for key, value := range configEnvReplace {
+			if strings.Contains(v, key) {
+				v = strings.ReplaceAll(v, key, value)
+			}
+		}
+		os.Setenv(k, v)
+		fmt.Println("ENV:", k, "=", v)
+	}
 }

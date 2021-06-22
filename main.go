@@ -15,11 +15,13 @@ var (
 )
 
 func main() {
+	// Just Ensure that the folders are there
 	if _, err := os.Stat(busybox); err != nil {
 		os.MkdirAll(dataDir+"/bin/busybox", 0755)
 		os.MkdirAll(dataDir+"/home", 0755)
 		os.MkdirAll(dataDir+"/opt", 0755)
 	}
+	// If busybox is not found, get it
 	if _, err := os.Stat(busybox); err != nil {
 		err := fetchFile(busybox, "https://frippery.org/files/busybox/busybox64.exe")
 		if err != nil {
@@ -28,6 +30,7 @@ func main() {
 		}
 	}
 
+	// Setup Config
 	configErr := setupConfig()
 	if configErr != nil {
 		fmt.Println("Could not init config")
@@ -36,11 +39,14 @@ func main() {
 
 	envInit()
 
+	// Install Busybox into the folder (if this errors, default config will work)
 	exec.Command(busybox, "--install", busyboxBin).Run()
 
+	// Sometimes if ProgramArgs is "", it will just error depending on the program
+	// This prevents that
 	cmd := exec.Command(conf.Program, conf.ProgramArgs)
 	if conf.ProgramArgs == "" {
-		cmd = exec.Command(conf.Program, conf.ProgramArgs)
+		cmd = exec.Command(conf.Program)
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
@@ -51,6 +57,7 @@ func main() {
 	}
 }
 
+// download litterally any file
 func fetchFile(filepath string, url string) error {
 
 	// Get the data
