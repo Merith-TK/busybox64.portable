@@ -12,21 +12,21 @@ var (
 	conf          config
 	configfile    = strings.TrimSuffix(os.Args[0], ".exe") + ".toml"
 	dataDir       = strings.TrimSuffix(os.Args[0], ".exe") + ".data"
-	dataBin       = dataDir + "/.busybox"
 	defaultConfig = `
-	launcher = "busybox64.exe"
-	launcherArgs = "bash"
-	[environment]
-	  APPDATA = "{data}/"
-	  HOME = "{data}/"
-	  PATH = "{data}/.busybox;{data}/.bin
+program = "bash"
+programArgs = ""
+[environment]
+  APPDATA = "{data}/opt"
+  LOCALAPPDATA = "{data}/opt"
+  HOME = "{data}/home"
+  PATH = "{data}/bin;{data}/bin/busybox"
 `
 )
 
 type config struct {
-	Input        string            `toml:"input"`
-	LauncherArgs string            `toml:"launcherArgs"`
-	Environment  map[string]string `toml:"environment"`
+	Program     string            `toml:"program"`
+	ProgramArgs string            `toml:"programArgs"`
+	Environment map[string]string `toml:"environment"`
 }
 
 func setupConfig() error {

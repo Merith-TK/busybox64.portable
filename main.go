@@ -10,13 +10,15 @@ import (
 )
 
 var (
-	busybox = dataDir + "/.busybox/busybox64.exe"
+	busyboxBin = dataDir + "/bin/busybox"
+	busybox    = dataDir + "/bin/busybox/busybox64.exe"
 )
 
 func main() {
 	if _, err := os.Stat(busybox); err != nil {
-		os.MkdirAll(dataDir+"/.busybox", 0755)
-		os.MkdirAll(dataDir+"/.bin", 0755)
+		os.MkdirAll(dataDir+"/bin/busybox", 0755)
+		os.MkdirAll(dataDir+"/home", 0755)
+		os.MkdirAll(dataDir+"/opt", 0755)
 	}
 	if _, err := os.Stat(busybox); err != nil {
 		err := fetchFile(busybox, "https://frippery.org/files/busybox/busybox64.exe")
@@ -34,8 +36,12 @@ func main() {
 
 	envInit()
 
-	exec.Command(busybox, "--install", dataBin).Run()
-	cmd := exec.Command(busybox, "bash")
+	exec.Command(busybox, "--install", busyboxBin).Run()
+
+	cmd := exec.Command(conf.Program, conf.ProgramArgs)
+	if conf.ProgramArgs == "" {
+		cmd = exec.Command(conf.Program, conf.ProgramArgs)
+	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	cmd.Stdin = os.Stdin
