@@ -1,4 +1,4 @@
-module shell
+module busybox64.portable
 
 go 1.16
 

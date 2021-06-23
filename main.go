@@ -7,19 +7,40 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 )
 
 var (
-	busyboxBin = dataDir + "/bin/busybox"
-	busybox    = dataDir + "/bin/busybox/busybox64.exe"
+	// create blank globals for init()
+	busyboxBin string
+	busybox    string
+
+	configfile string
+	dataDir    string
 )
 
+func init() {
+	// set Absolute System Paths
+	configfile, _ = filepath.Abs(strings.TrimSuffix(os.Args[0], ".exe") + ".toml")
+	configfile = strings.ReplaceAll(configfile, "\\", "/")
+	dataDir, _ = filepath.Abs(strings.TrimSuffix(os.Args[0], ".exe") + ".data")
+	dataDir = strings.ReplaceAll(dataDir, "\\", "/")
+	// Set Absolute buysbox Paths
+	busyboxBin, _ = filepath.Abs(dataDir + "/bin")
+	busyboxBin = strings.ReplaceAll(busyboxBin, "\\", "/")
+	busybox = busyboxBin + "/busybox.exe"
+}
 func main() {
 	// Just Ensure that the folders are there
 	if _, err := os.Stat(busybox); err != nil {
-		os.MkdirAll(dataDir+"/bin/busybox", 0755)
+		err := nil
+		os.MkdirAll(dataDir+"/bin", 0755)
 		os.MkdirAll(dataDir+"/home", 0755)
 		os.MkdirAll(dataDir+"/opt", 0755)
+		if err != nil {
+			log.Fatal("[ERROR] Could not make rootfs directories")
+		}
 	}
 	// If busybox is not found, get it
 	if _, err := os.Stat(busybox); err != nil {
@@ -30,31 +51,20 @@ func main() {
 		}
 	}
 
-	// Setup Config
-	configErr := setupConfig()
-	if configErr != nil {
-		fmt.Println("Could not init config")
-		log.Println(configErr)
-	}
+	setupConfig()
+	setupEnvironment()
+	execute(conf.Program, conf.ProgramArgs)
+}
 
-	envInit()
-
-	// Install Busybox into the folder (if this errors, default config will work)
-	exec.Command(busybox, "--install", busyboxBin).Run()
-
-	// Sometimes if ProgramArgs is "", it will just error depending on the program
-	// This prevents that
-	cmd := exec.Command(conf.Program, conf.ProgramArgs)
-	if conf.ProgramArgs == "" {
-		cmd = exec.Command(conf.Program)
-	}
+func execute(execute string, args string) {
+	cmdargs := strings.Split(args, " ")
+	cmd := exec.Command(execute, cmdargs...)
+	cmd.Dir = filepath.Dir(dataDir)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	cmd.Stdin = os.Stdin
-	cmdErr := cmd.Run()
-	if cmdErr != nil {
-		log.Println(cmdErr)
-	}
+	fmt.Println("[BusyBox64 Portable] Running "+execute, args)
+	cmd.Run()
 }
 
 // download litterally any file

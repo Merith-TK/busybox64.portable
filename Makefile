@@ -1,4 +1,4 @@
 default:
 	go build ./
 	export PATH=""
-	./shell.exe
+	busybox64.portable

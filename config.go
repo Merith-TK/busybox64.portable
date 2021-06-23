@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -11,21 +10,15 @@ import (
 
 var (
 	conf          config
-	configfile    = strings.TrimSuffix(os.Args[0], ".exe") + ".toml"
-	dataDir       = strings.TrimSuffix(os.Args[0], ".exe") + ".data"
 	defaultConfig = `
-program = "bash"
-programArgs = ""
+program = "busybox.exe"
+programArgs = "bash"
 [environment]
   APPDATA = "{data}/opt"
   LOCALAPPDATA = "{data}/opt"
   HOME = "{data}/home"
   PATH = "{data}/bin;{data}/bin/busybox"
 `
-	// THis is here for future proofing api shit
-	configEnvReplace = map[string]string{
-		"{data}": dataDir,
-	}
 )
 
 type config struct {
@@ -53,7 +46,10 @@ func setupConfig() error {
 }
 
 // Setup the Environment part of the config,
-func envInit() {
+func setupEnvironment() {
+	configEnvReplace := map[string]string{
+		"{data}": dataDir,
+	}
 	for k, v := range conf.Environment {
 		for key, value := range configEnvReplace {
 			if strings.Contains(v, key) {
@@ -61,6 +57,5 @@ func envInit() {
 			}
 		}
 		os.Setenv(k, v)
-		fmt.Println("ENV:", k, "=", v)
 	}
 }
