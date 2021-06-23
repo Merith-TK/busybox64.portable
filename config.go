@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	toml "github.com/pelletier/go-toml"
@@ -17,7 +18,8 @@ programArgs = "bash"
   APPDATA = "{data}/opt"
   LOCALAPPDATA = "{data}/opt"
   HOME = "{data}/home"
-  PATH = "{data}/bin;{data}/bin/busybox"
+  USERPROFILE = "{data}/home"
+  PATH = "{data}/bin"
 `
 )
 
@@ -54,6 +56,7 @@ func setupEnvironment() {
 		for key, value := range configEnvReplace {
 			if strings.Contains(v, key) {
 				v = strings.ReplaceAll(v, key, value)
+				v = filepath.ToSlash(v)
 			}
 		}
 		os.Setenv(k, v)

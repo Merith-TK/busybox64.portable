@@ -16,29 +16,30 @@ var (
 	busyboxBin string
 	busybox    string
 
-	configfile string
-	dataDir    string
+	configfile = strings.TrimSuffix(os.Args[0], ".exe") + ".toml"
+	dataDir    = strings.TrimSuffix(os.Args[0], ".exe") + ".data"
 )
 
 func init() {
-	// set Absolute System Paths
-	configfile, _ = filepath.Abs(strings.TrimSuffix(os.Args[0], ".exe") + ".toml")
-	configfile = strings.ReplaceAll(configfile, "\\", "/")
-	dataDir, _ = filepath.Abs(strings.TrimSuffix(os.Args[0], ".exe") + ".data")
-	dataDir = strings.ReplaceAll(dataDir, "\\", "/")
 	// Set Absolute buysbox Paths
-	busyboxBin, _ = filepath.Abs(dataDir + "/bin")
-	busyboxBin = strings.ReplaceAll(busyboxBin, "\\", "/")
-	busybox = busyboxBin + "/busybox.exe"
+	datapath, err := filepath.Abs(dataDir)
+	if err != nil {
+		log.Fatal("[ERROR]: Unable to locate Data Directory, ", err)
+	} else {
+		dataDir = datapath
+	}
+	busyboxBin = filepath.ToSlash(datapath + "/bin")
+	busybox = filepath.Join(busyboxBin, "/busybox.exe")
 }
+
 func main() {
 	// Just Ensure that the folders are there
 	if _, err := os.Stat(busybox); err != nil {
-		err := nil
+		var fileerr error
 		os.MkdirAll(dataDir+"/bin", 0755)
 		os.MkdirAll(dataDir+"/home", 0755)
 		os.MkdirAll(dataDir+"/opt", 0755)
-		if err != nil {
+		if fileerr != nil {
 			log.Fatal("[ERROR] Could not make rootfs directories")
 		}
 	}
