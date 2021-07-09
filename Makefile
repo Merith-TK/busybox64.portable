@@ -1,4 +1,4 @@
 default:
 	go build ./
 	export PATH=""
-	busybox64.portable
+	start busybox64.portable

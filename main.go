@@ -18,6 +18,7 @@ var (
 
 	configfile = strings.TrimSuffix(os.Args[0], ".exe") + ".toml"
 	dataDir    = strings.TrimSuffix(os.Args[0], ".exe") + ".data"
+	pwd        string
 )
 
 func init() {
@@ -53,14 +54,17 @@ func main() {
 	}
 
 	setupConfig()
-	setupEnvironment()
-	execute(conf.Program, conf.ProgramArgs)
+	pwd = setupEnvironment()
+	execute(conf.Program, conf.ProgramArgs, pwd)
 }
 
-func execute(execute string, args string) {
+func execute(execute string, args string, pwd string) {
 	cmdargs := strings.Split(args, " ")
 	cmd := exec.Command(execute, cmdargs...)
 	cmd.Dir = filepath.Dir(dataDir)
+	if pwd != "" {
+		cmd.Dir = pwd
+	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	cmd.Stdin = os.Stdin
