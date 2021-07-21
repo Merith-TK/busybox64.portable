@@ -16,6 +16,9 @@ var (
 	program = "busybox.exe"
 	# Arguments for the program
 	programArgs = "bash"
+
+	# Wether to run as admin or not
+	runAsAdmin = false
 	
 	# Global Environment variables to be set
 	# to aid with portability,
@@ -43,6 +46,7 @@ var (
 type config struct {
 	Program     string            `toml:"program"`
 	ProgramArgs string            `toml:"programArgs"`
+	RunAsAdmin  bool              `toml:"runAsAdmin"`
 	Environment map[string]string `toml:"environment"`
 }
 
@@ -66,9 +70,14 @@ func setupConfig() error {
 
 // Setup the Environment part of the config,
 func setupEnvironment() string {
+	// Variables for env replacement
+	drivePath, _ := filepath.Abs("/")
+	drivePath = filepath.ToSlash(drivePath)
+	drivePath = strings.TrimSuffix(drivePath, "/")
 	var output string
 	configEnvReplace := map[string]string{
-		"{data}": dataDir,
+		"{data}":  dataDir,
+		"{drive}": drivePath,
 	}
 
 	// Replace Normal Config options

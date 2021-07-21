@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strings"
 )
@@ -55,6 +56,12 @@ func main() {
 
 	setupConfig()
 	pwd = setupEnvironment()
+	if conf.RunAsAdmin {
+		println(user.Username)
+		//runElevated() //, pwd)
+		os.Exit(1)
+	}
+
 	execute(conf.Program, conf.ProgramArgs, pwd)
 }
 
