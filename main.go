@@ -9,18 +9,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"syscall"
-
-	"golang.org/x/sys/windows"
 )
 
 var (
 	// create blank globals for init()
-	busyboxBin string
-	busybox    string
+	busybox string
 
-	configfile = strings.TrimSuffix(os.Args[0], ".exe") + ".toml"
 	dataDir    = strings.TrimSuffix(os.Args[0], ".exe") + ".data"
+	configfile = dataDir + "/config.toml"
 	pwd        string
 )
 
@@ -32,24 +28,21 @@ func init() {
 	} else {
 		dataDir = datapath
 	}
-	busyboxBin = filepath.ToSlash(datapath + "/bin")
-	busybox = filepath.Join(busyboxBin, "/busybox.exe")
+	busybox = filepath.Join(dataDir, "/busybox.exe")
 }
 
 func main() {
-	// Just Ensure that the folders are there
-	if _, err := os.Stat(busybox); err != nil {
-		var fileerr error
-		os.MkdirAll(dataDir+"/bin", 0755)
-		os.MkdirAll(dataDir+"/home", 0755)
-		os.MkdirAll(dataDir+"/opt", 0755)
-		if fileerr != nil {
-			log.Fatal("[ERROR] Could not make rootfs directories")
-		}
-	}
 	// If busybox is not found, get it
 	if _, err := os.Stat(busybox); err != nil {
+		os.Mkdir(dataDir, 0755)
 		err := fetchFile(busybox, "https://frippery.org/files/busybox/busybox64.exe")
+		if err != nil {
+			log.Fatalln(err)
+			os.Exit(1)
+		}
+	}
+	if _, err := os.Stat(dataDir + "/start.sh"); err != nil {
+		err := fetchFile(dataDir+"/start.sh", "https://raw.githubusercontent.com/Merith-TK/busybox64.portable/main/defaultData/start.sh")
 		if err != nil {
 			log.Fatalln(err)
 			os.Exit(1)
@@ -57,19 +50,16 @@ func main() {
 	}
 
 	setupConfig()
-	pwd = setupEnvironment()
-	if conf.RunAsAdmin {
-		_, err := os.Open("\\\\.\\PHYSICALDRIVE0")
-		if err != nil {
-			executeAsAdmin()
-			println("ELEVATING")
-			os.Exit(1)
-		}
-	}
-	execute(conf.Program, conf.ProgramArgs, pwd)
+	setupEnvironment()
+	execute(conf.Program, conf.ProgramArgs, conf.WorkingDirectory)
 }
 
 func execute(execute string, args string, pwd string) {
+	if conf.IsolatedPath {
+		os.Setenv("PATH", dataDir)
+	} else {
+		os.Setenv("PATH", strings.Join([]string{dataDir, os.Getenv("PATH")}, ";"))
+	}
 	cmdargs := strings.Split(args, " ")
 	cmd := exec.Command(execute, cmdargs...)
 	cmd.Dir = filepath.Dir(dataDir)
@@ -77,29 +67,10 @@ func execute(execute string, args string, pwd string) {
 		cmd.Dir = pwd
 	}
 	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stdout
+	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 	fmt.Println("[BusyBox64 Portable] Running "+execute, args)
 	cmd.Run()
-}
-
-func executeAsAdmin() {
-	verb := "runas"
-	exe, _ := os.Executable()
-	cwd, _ := os.Getwd()
-	args := strings.Join(os.Args[1:], " ")
-
-	verbPtr, _ := syscall.UTF16PtrFromString(verb)
-	exePtr, _ := syscall.UTF16PtrFromString(exe)
-	cwdPtr, _ := syscall.UTF16PtrFromString(cwd)
-	argPtr, _ := syscall.UTF16PtrFromString(args)
-
-	var showCmd int32 = 1 //SW_NORMAL
-
-	err := windows.ShellExecute(0, verbPtr, exePtr, argPtr, cwdPtr, showCmd)
-	if err != nil {
-		fmt.Println(err)
-	}
 }
 
 // download litterally any file

@@ -10,71 +10,40 @@ import (
 )
 
 var (
-	conf          config
-	defaultConfig = `# The program to run, can be defined as a direct
-	# file path, or as an EXE in the $PATH variable
-	program = "busybox.exe"
-	# Arguments for the program
-	programArgs = "bash"
-
-	# Wether to run as admin or not
-	runAsAdmin = false
-	
-	# Global Environment variables to be set
-	# to aid with portability,
-	[environment]
-		# Please do not edit these values unless you
-		# know what you are doing
-		APPDATA = "{data}/opt"
-		LOCALAPPDATA = "{data}/opt"
-		HOME = "{data}/home"
-		USERPROFILE = "{data}/home"
-	
-		# PWD is used to tell the program where to
-		# run inside of, this default is good for
-		# most things, but if you need to edit it
-		# feel free to
-		PWD = "{data}/home"
-		
-		# This tells it where to find programs in 
-		# PATH, feel free to edit, but leave the
-		# default value for busybox
-		PATH = "{data}/bin"
-`
+	conf config
 )
 
 type config struct {
-	Program     string            `toml:"program"`
-	ProgramArgs string            `toml:"programArgs"`
-	RunAsAdmin  bool              `toml:"runAsAdmin"`
-	Environment map[string]string `toml:"environment"`
+	Program          string            `toml:"program"`
+	ProgramArgs      string            `toml:"programArgs"`
+	WorkingDirectory string            `toml:"workingDirectory"`
+	IsolatedPath     bool              `toml:"isolatedPath"`
+	Environment      map[string]string `toml:"environment"`
 }
 
-func setupConfig() error {
+func setupConfig() {
 	// Check if file is readable, if not, make the file
 	str, fileErr := os.ReadFile(configfile)
 	if fileErr != nil {
-		f, err := os.OpenFile(configfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		err := fetchFile(configfile, "https://raw.githubusercontent.com/Merith-TK/busybox64.portable/main/defaultData/config.toml")
 		if err != nil {
-			log.Println(err)
+			log.Fatalln(err)
+			os.Exit(1)
 		}
-		defer f.Close()
-		if _, err := f.WriteString(defaultConfig); err != nil {
-			log.Println(err)
-		}
-		str, fileErr = os.ReadFile(configfile)
+		str, _ = os.ReadFile(configfile)
 	}
-	_ = toml.Unmarshal([]byte(str), &conf)
-	return fileErr
+	err := toml.Unmarshal([]byte(str), &conf)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 // Setup the Environment part of the config,
-func setupEnvironment() string {
+func setupEnvironment() {
 	// Variables for env replacement
 	drivePath, _ := filepath.Abs("/")
 	drivePath = filepath.ToSlash(drivePath)
 	drivePath = strings.TrimSuffix(drivePath, "/")
-	var output string
 	configEnvReplace := map[string]string{
 		"{data}":  dataDir,
 		"{drive}": drivePath,
@@ -88,6 +57,9 @@ func setupEnvironment() string {
 		if strings.Contains(conf.ProgramArgs, key) {
 			conf.ProgramArgs = filepath.ToSlash(strings.ReplaceAll(conf.ProgramArgs, key, value))
 		}
+		if strings.Contains(conf.WorkingDirectory, key) {
+			conf.WorkingDirectory = filepath.ToSlash(strings.ReplaceAll(conf.WorkingDirectory, key, value))
+		}
 	}
 
 	// Replace Environment Variables
@@ -97,15 +69,7 @@ func setupEnvironment() string {
 				v = strings.ReplaceAll(v, key, value)
 				v = filepath.ToSlash(v)
 			}
-			// Set Working Directory for programs that are
-			// picky about it, usually not needed so disabled
-			// in default config
-			if k == "PWD" {
-				output = v
-			}
 		}
 		os.Setenv(k, v)
 	}
-
-	return output
 }
