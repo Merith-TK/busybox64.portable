@@ -1,7 +1,7 @@
 # The program to run, can be defined as a direct
 # file path, or as an EXE in the $PATH variable
 program = "busybox.exe"
-programArgs = "bash -c '{data}/start.sh'"
+programArgs = "bash -c 'start.sh'"
 
 # Working Directory
 workingDirectory = "{data}/"
