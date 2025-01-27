@@ -25,20 +25,23 @@ func setupConfig() {
 	// Check if file is readable, if not, make the file
 	str, fileErr := os.ReadFile(configfile)
 	if fileErr != nil {
-		err := fetchFile(configfile, "https://raw.githubusercontent.com/Merith-TK/busybox64.portable/main/defaultData/config.toml")
+		// If the file is not found, create it from the embedded content
+		err := os.WriteFile(configfile, fsDefaultConfig, 0644)
 		if err != nil {
 			log.Fatalln(err)
 			os.Exit(1)
 		}
-		str, _ = os.ReadFile(configfile)
+		str = fsDefaultConfig // Use the embedded default config
 	}
-	err := toml.Unmarshal([]byte(str), &conf)
+
+	// Unmarshal the config data into the struct
+	err := toml.Unmarshal(str, &conf)
 	if err != nil {
 		log.Fatalln(err)
 	}
 }
 
-// Setup the Environment part of the config,
+// Setup the Environment part of the config
 func setupEnvironment() {
 	// Variables for env replacement
 	drivePath, _ := filepath.Abs("/")

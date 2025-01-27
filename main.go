@@ -17,11 +17,10 @@ var (
 
 	dataDir    = strings.TrimSuffix(os.Args[0], ".exe") + ".data"
 	configfile = dataDir + "/config.toml"
-	pwd        string
 )
 
 func init() {
-	// Set Absolute buysbox Paths
+	// Set Absolute busybox Paths
 	datapath, err := filepath.Abs(dataDir)
 	if err != nil {
 		log.Fatal("[ERROR]: Unable to locate Data Directory, ", err)
@@ -35,14 +34,22 @@ func main() {
 	// If busybox is not found, get it
 	if _, err := os.Stat(busybox); err != nil {
 		os.Mkdir(dataDir, 0755)
-		err := fetchFile(busybox, "https://frippery.org/files/busybox/busybox64.exe")
+		err := fetchFile(busybox, "https://frippery.org/files/busybox/busybox64u.exe")
 		if err != nil {
 			log.Fatalln(err)
 			os.Exit(1)
 		}
 	}
 	if _, err := os.Stat(dataDir + "/start.sh"); err != nil {
-		err := fetchFile(dataDir+"/start.sh", "https://raw.githubusercontent.com/Merith-TK/busybox64.portable/main/defaultData/start.sh")
+		err := os.WriteFile(dataDir+"/start.sh", fsDefaultStart, 0644)
+		if err != nil {
+			log.Fatalln(err)
+			os.Exit(1)
+		}
+	}
+
+	if _, err := os.Stat(dataDir + "/config.toml"); err != nil {
+		err := os.WriteFile(dataDir+"/config.toml", fsDefaultConfig, 0644)
 		if err != nil {
 			log.Fatalln(err)
 			os.Exit(1)
@@ -73,11 +80,19 @@ func execute(execute string, args string, pwd string) {
 	cmd.Run()
 }
 
-// download litterally any file
+// download literally any file
 func fetchFile(filepath string, url string) error {
+	client := &http.Client{}
 
-	// Get the data
-	resp, err := http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+
+	// Mimic a browser
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -90,7 +105,7 @@ func fetchFile(filepath string, url string) error {
 	}
 	defer out.Close()
 
-	// Write the body to file
+	// Write the body to the file
 	_, err = io.Copy(out, resp.Body)
 	return err
 }
